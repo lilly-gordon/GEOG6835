@@ -5,74 +5,73 @@ import matplotlib.pyplot as plt
 from streamlit_folium import st_folium
 import folium
 
-st.title("CRC NAIP 2011 NDVI Viewer (True NDVI Scale)")
+st.title("CRC NAIP 2011 NDVI Viewer")
 
 # ---------------------------------------------------
-# Load NDVI TIFF from PIL so its cloud compatable
+# 1) Load NDVI TIFF using PIL (Safe on Streamlit Cloud)
 # ---------------------------------------------------
 tif_path = "data/CRC_NAIP_2011_NDVI.tif"
 
-# Extract band + bounds
 img = Image.open(tif_path)
-ndvi = np.array(img).astype(float)
-
-
-left, bottom, right, top = (-109.870, 38.123, -109.855, 38.140)  
+ndvi = np.array(img)  # REAL NDVI values (-1 to 1)
 
 # ---------------------------------------------------
-# NDVI colormap with true NDVI scale (-1 to 1)
+# 2) Geospatial Bounds (manually inserted)
 # ---------------------------------------------------
+left  = -109.639353
+right = -109.628493
+bottom = 38.262410
+top    = 38.268114
 
-# NDVI threshold breaks (bins)
-ndvi_breaks = [-1.0, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0]
-
-# Colors corresponding to those bins — official GEE NDVI palette
-ndvi_colors = [
-    '#FFFFFF',  # <=0.0 (no veg)
-    '#CE7E45',  # 0.0–0.1
-    '#FCD163',  # 0.1–0.2
-    '#99B718',  # 0.2–0.3
-    '#66A000',  # 0.3–0.4
-    '#207401',  # 0.4–0.5
-    '#056201',  # 0.5–0.6
-    '#004C00',  # 0.6–0.7
-    '#023B01',  # 0.7–0.8
-    '#012E01',  # >0.8 dense
-]
-
-# Map NDVI values to the correct color bin
-def ndvi_colormap(val):
-    """Map NDVI value (-1 to 1) to correct GEE-style color."""
-    if np.isnan(val):
-        return (0, 0, 0, 0)  # transparent for NaN
-    
-    for i in range(len(ndvi_breaks) - 1):
-        if ndvi_breaks[i] <= val < ndvi_breaks[i + 1]:
-            hex_color = ndvi_colors[i]
-            rgb = tuple(int(hex_color[j:j+2], 16) / 255 for j in (1, 3, 5))
-            return (rgb[0], rgb[1], rgb[2], 1.0)
-    
-    # fallback (should not happen)
-    return (0, 0, 0, 1)
-
-# ---------------------------------------------------
-# Create Folium map centered on raster
-# ---------------------------------------------------
+# Map center
 center_lat = (top + bottom) / 2
 center_lon = (left + right) / 2
 
-m = folium.Map(location=[center_lat, center_lon], zoom_start=14)
+# ---------------------------------------------------
+# 3) NDVI Breaks + Colors (GEE style)
+# ---------------------------------------------------
+ndvi_breaks = [-1.0, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0]
 
-# Add the raster with TRUE NDVI values and our custom colormap
+ndvi_colors = [
+    '#FFFFFF',
+    '#CE7E45',
+    '#FCD163',
+    '#99B718',
+    '#66A000',
+    '#207401',
+    '#056201',
+    '#004C00',
+    '#023B01',
+    '#012E01'
+]
+
+def ndvi_colormap(val):
+    """Map NDVI value to RGBA tuple."""
+    if np.isnan(val):
+        return (0, 0, 0, 0)
+    for i in range(len(ndvi_breaks) - 1):
+        if ndvi_breaks[i] <= val < ndvi_breaks[i + 1]:
+            hex_color = ndvi_colors[i]
+            r = int(hex_color[1:3], 16) / 255
+            g = int(hex_color[3:5], 16) / 255
+            b = int(hex_color[5:7], 16) / 255
+            return (r, g, b, 1)
+    return (0, 0, 0, 1)
+
+# ---------------------------------------------------
+# 4) Folium map
+# ---------------------------------------------------
+m = folium.Map(location=[center_lat, center_lon], zoom_start=15)
+
 folium.raster_layers.ImageOverlay(
-    image=ndvi,                       # REAL NDVI (-1 → 1)
+    image=ndvi,
     bounds=[[bottom, left], [top, right]],
-    colormap=ndvi_colormap,           # exact GEE palette
+    colormap=ndvi_colormap,
     opacity=0.8
 ).add_to(m)
 
 # ---------------------------------------------------
-# 4️⃣ Add Legend (GEE Style)
+# 5) Legend
 # ---------------------------------------------------
 legend_html = """
  <div style="
@@ -97,13 +96,13 @@ legend_html = """
 m.get_root().html.add_child(folium.Element(legend_html))
 
 # ---------------------------------------------------
-# 5️⃣ Show map in Streamlit
+# 6) Display Map
 # ---------------------------------------------------
 st.subheader("NDVI Map")
 st_folium(m, width=700, height=500)
 
 # ---------------------------------------------------
-# 6️⃣ NDVI Histogram
+# 7) NDVI Histogram
 # ---------------------------------------------------
 st.subheader("NDVI Histogram")
 fig, ax = plt.subplots()
