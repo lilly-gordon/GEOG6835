@@ -1,6 +1,6 @@
 streamlit
-rasterio
 numpy
 matplotlib
 folium
+pillow
 streamlit-folium
