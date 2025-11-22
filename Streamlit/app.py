@@ -10,7 +10,7 @@ st.title("CRC NAIP 2011 NDVI Viewer")
 # ---------------------------------------------------
 # 1) Load NDVI TIFF using PIL (Safe on Streamlit Cloud)
 # ---------------------------------------------------
-tif_path = "Streamlit/data/CRC_NAIP_2011_NDVI.tif"
+tif_path = "data/CRC_NAIP_2011_NDVI.tif"
 
 img = Image.open(tif_path)
 ndvi = np.array(img)  # REAL NDVI values (-1 to 1)
@@ -110,4 +110,5 @@ ax.hist(ndvi[np.isfinite(ndvi)], bins=50, color="green")
 ax.set_xlabel("NDVI")
 ax.set_ylabel("Pixel Count")
 st.pyplot(fig)
+
 
