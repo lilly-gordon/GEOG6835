@@ -1,6 +1,6 @@
 streamlit
-numpy
-matplotlib
-folium
-pillow
 streamlit-folium
+folium
+numpy
+pillow
+matplotlib
